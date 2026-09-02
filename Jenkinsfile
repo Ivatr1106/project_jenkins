@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        FLASK_SECRET_KEY = 'your-secret-key-here'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -17,14 +21,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'flask-secret-key',
-                        variable: 'FLASK_SECRET_KEY'
-                    )
-                ]) {
-                    sh 'python3 -m pytest'
-                }
+                sh 'python3 -m pytest'
             }
         }
 
@@ -56,6 +53,5 @@ pipeline {
                 }
             }
         }
-
     }
 }
