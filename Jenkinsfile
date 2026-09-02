@@ -17,7 +17,14 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'python3 -m pytest'
+                withCredentials([
+                    string(
+                        credentialsId: 'flask-secret-key',
+                        variable: 'FLASK_SECRET_KEY'
+                    )
+                ]) {
+                    sh 'python3 -m pytest'
+                }
             }
         }
 
