@@ -17,7 +17,11 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'TESTING=1 python3 -m pytest'
+                sh '''
+                    export TESTING=1
+                    export FLASK_SECRET_KEY="test-secret-key-for-jenkins"
+                    python3 -m pytest
+                '''
             }
         }
 
