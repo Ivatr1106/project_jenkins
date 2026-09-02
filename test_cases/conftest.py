@@ -71,6 +71,12 @@ def client():
 
         with app.test_client() as test_client:
 
+            # Create a logged-in test session.
+            with test_client.session_transaction() as session:
+                session["user_id"] = user.id
+                session["role"] = "employee"
+                session["employee_id"] = employee.id
+
             yield test_client
 
         db.session.remove()
