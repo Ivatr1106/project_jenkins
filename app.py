@@ -1,5 +1,3 @@
-
-
 from flask import Flask, render_template, request, jsonify
 import os
 from dotenv import load_dotenv
@@ -33,57 +31,116 @@ load_dotenv()
 
 app = Flask(__name__)
 
+
 @app.route("/health")
 def health():
     return jsonify({"status": "healthy"}), 200
 
+
+# Flask secret key
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
 if not app.secret_key:
-    raise RuntimeError("FLASK_SECRET_KEY is missing. Create a .env file from .env.example.")
+    raise RuntimeError(
+        "FLASK_SECRET_KEY is missing. Create a .env file from .env.example."
+    )
+
 
 # JWT configuration using RSA public/private keys (RS256).
 private_key, public_key = load_keys()
+
 app.config["JWT_ALGORITHM"] = "RS256"
 app.config["JWT_PRIVATE_KEY"] = private_key
 app.config["JWT_PUBLIC_KEY"] = public_key
 app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies"]
+
 # Browser pages use an HttpOnly JWT cookie.
 # CSRF protection is enabled for cookie-based state-changing requests.
-app.config["JWT_COOKIE_SECURE"] = os.getenv("JWT_COOKIE_SECURE", "false").lower() == "true"
-app.config["JWT_COOKIE_SAMESITE"] = os.getenv("JWT_COOKIE_SAMESITE", "Lax")
+app.config["JWT_COOKIE_SECURE"] = (
+    os.getenv("JWT_COOKIE_SECURE", "false").lower() == "true"
+)
+
+app.config["JWT_COOKIE_SAMESITE"] = os.getenv(
+    "JWT_COOKIE_SAMESITE",
+    "Lax"
+)
+
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token_cookie"
 app.config["JWT_COOKIE_DOMAIN"] = None
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15")))
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "30")))
+
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(
+    minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))
+)
+
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(
+    days=int(os.getenv("JWT_REFRESH_DAYS", "30"))
+)
+
 
 # Harden the browser session used by the server-rendered pages.
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_MB", "5")) * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = (
+    int(os.getenv("MAX_UPLOAD_MB", "5")) * 1024 * 1024
+)
+
+
+# ---------------------------------------------------------
+# Database configuration
+# ---------------------------------------------------------
+#
+# When Jenkins runs pytest, TESTING=1 is supplied.
+# In that case use an in-memory SQLite database.
+#
+# Normal development/Docker execution continues to use
+# MYSQL_DB_URL from the environment.
+# ---------------------------------------------------------
+
+if os.getenv("TESTING") == "1":
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("MYSQL_DB_URL")
+
 
 init_db(app)
 
+
 jwt = JWTManager(app)
+
 
 @jwt.token_in_blocklist_loader
 def is_token_revoked(jwt_header, jwt_payload):
     return jwt_payload["jti"] in REVOKED_TOKENS
 
+
 @jwt.revoked_token_loader
 def revoked_token_callback(jwt_header, jwt_payload):
-    return jsonify({"error": "Unauthorized", "message": "Token has been revoked"}), 401
+    return jsonify({
+        "error": "Unauthorized",
+        "message": "Token has been revoked"
+    }), 401
+
 
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     if request.path.startswith("/api"):
-        return jsonify({"error": "Unauthorized", "message": "Bearer access token is required"}), 401
+        return jsonify({
+            "error": "Unauthorized",
+            "message": "Bearer access token is required"
+        }), 401
+
     return jsonify({"error": "Unauthorized"}), 401
+
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
-    return jsonify({"error": "Unauthorized", "message": "Invalid or expired token"}), 401
+    return jsonify({
+        "error": "Unauthorized",
+        "message": "Invalid or expired token"
+    }), 401
+
 
 app.register_blueprint(employee_controller)
 app.register_blueprint(attendance_controller)
@@ -132,17 +189,48 @@ def insert_initial_data():
 
         db.session.add_all(leave_types)
 
-    # Starter holiday calendar data. HR can add/remove holidays from the UI.
+    # Starter holiday calendar data.
+    # HR can add/remove holidays from the UI.
     if Holiday.query.count() == 0:
+
         holidays = [
-            Holiday(name="Republic Day", holiday_date=date(2026, 1, 26), description="National holiday"),
-            Holiday(name="Holi", holiday_date=date(2026, 3, 4), description="Festival holiday"),
-            Holiday(name="Good Friday", holiday_date=date(2026, 4, 3), description="Public holiday"),
-            Holiday(name="Independence Day", holiday_date=date(2026, 8, 15), description="National holiday"),
-            Holiday(name="Gandhi Jayanti", holiday_date=date(2026, 10, 2), description="National holiday"),
-            Holiday(name="Diwali", holiday_date=date(2026, 11, 8), description="Festival holiday"),
-            Holiday(name="Christmas Day", holiday_date=date(2026, 12, 25), description="Public holiday"),
+            Holiday(
+                name="Republic Day",
+                holiday_date=date(2026, 1, 26),
+                description="National holiday"
+            ),
+            Holiday(
+                name="Holi",
+                holiday_date=date(2026, 3, 4),
+                description="Festival holiday"
+            ),
+            Holiday(
+                name="Good Friday",
+                holiday_date=date(2026, 4, 3),
+                description="Public holiday"
+            ),
+            Holiday(
+                name="Independence Day",
+                holiday_date=date(2026, 8, 15),
+                description="National holiday"
+            ),
+            Holiday(
+                name="Gandhi Jayanti",
+                holiday_date=date(2026, 10, 2),
+                description="National holiday"
+            ),
+            Holiday(
+                name="Diwali",
+                holiday_date=date(2026, 11, 8),
+                description="Festival holiday"
+            ),
+            Holiday(
+                name="Christmas Day",
+                holiday_date=date(2026, 12, 25),
+                description="Public holiday"
+            ),
         ]
+
         db.session.add_all(holidays)
 
     db.session.commit()
@@ -156,4 +244,8 @@ if __name__ == "__main__":
 
         insert_initial_data()
 
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )

@@ -1,4 +1,8 @@
+import os
 
+# Tell the application to use SQLite for tests.
+# This must happen BEFORE importing app.
+os.environ["TESTING"] = "1"
 
 import pytest
 
@@ -17,10 +21,6 @@ def client():
 
     app.config["TESTING"] = True
 
-    app.config[
-        "SQLALCHEMY_DATABASE_URI"
-    ] = "sqlite:///:memory:"
-
     with app.app_context():
 
         db.drop_all()
@@ -34,13 +34,8 @@ def client():
             name="Developer"
         )
 
-        db.session.add(
-            department
-        )
-
-        db.session.add(
-            designation
-        )
+        db.session.add(department)
+        db.session.add(designation)
 
         db.session.add(
             LeaveType(
@@ -62,19 +57,13 @@ def client():
         db.session.add(employee)
         db.session.commit()
 
-        user = User(
-            email="test@gmail.com",
-            password=(
-                "$pbkdf2-sha256$29000$"
-            ),
-            role="employee",
-            employee_id=employee.id
-        )
-
         from werkzeug.security import generate_password_hash
 
-        user.password = generate_password_hash(
-            "password123"
+        user = User(
+            email="test@gmail.com",
+            password=generate_password_hash("password123"),
+            role="employee",
+            employee_id=employee.id
         )
 
         db.session.add(user)

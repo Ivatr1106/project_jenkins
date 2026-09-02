@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        FLASK_SECRET_KEY = 'your-secret-key-here'
-    }
-
     stages {
 
         stage('Checkout') {
@@ -21,7 +17,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'python3 -m pytest'
+                sh 'TESTING=1 python3 -m pytest'
             }
         }
 
