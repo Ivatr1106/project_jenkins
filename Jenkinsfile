@@ -25,6 +25,14 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh 'sonar-scanner'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t flask_mysql:latest .'
@@ -69,6 +77,8 @@ Build: #${env.BUILD_NUMBER}
 
 Docker image:
 ivanovich1106/hr_management_ivan:latest
+
+SonarQube analysis completed.
 
 Build URL:
 ${env.BUILD_URL}
