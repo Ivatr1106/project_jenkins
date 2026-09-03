@@ -54,4 +54,44 @@ pipeline {
             }
         }
     }
+
+    post {
+
+        success {
+            emailext(
+                to: 'ivantravassosdbce@gmail.com',
+                subject: "✅ ${env.JOB_NAME} #${env.BUILD_NUMBER} - SUCCESS",
+                body: """
+Build successful!
+
+Job: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+
+Docker image:
+ivanovich1106/hr_management_ivan:latest
+
+Build URL:
+${env.BUILD_URL}
+"""
+            )
+        }
+
+        failure {
+            emailext(
+                to: 'ivantravassosdbce@gmail.com',
+                subject: "❌ ${env.JOB_NAME} #${env.BUILD_NUMBER} - FAILED",
+                body: """
+Build FAILED!
+
+Job: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+
+Please check the Jenkins console output.
+
+Build URL:
+${env.BUILD_URL}
+"""
+            )
+        }
+    }
 }
