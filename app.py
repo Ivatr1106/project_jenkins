@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import os
 from dotenv import load_dotenv
 from datetime import date, timedelta
+
 from config.database import init_db, db
 from config.jwt_keys import load_keys
 from controller.user_controller import REVOKED_TOKENS
@@ -23,11 +24,13 @@ from controller.leave_controller import leave_controller
 from controller.user_controller import user_controller
 from controller.document_controller import document_controller
 from controller.holiday_controller import holiday_controller
+
 from flask_jwt_extended import JWTManager
 
 
 # Load local development secrets from .env before reading configuration.
 load_dotenv()
+
 
 app = Flask(__name__)
 
@@ -54,6 +57,7 @@ app.config["JWT_PRIVATE_KEY"] = private_key
 app.config["JWT_PUBLIC_KEY"] = public_key
 app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies"]
 
+
 # Browser pages use an HttpOnly JWT cookie.
 # CSRF protection is enabled for cookie-based state-changing requests.
 app.config["JWT_COOKIE_SECURE"] = (
@@ -69,6 +73,7 @@ app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token_cookie"
 app.config["JWT_COOKIE_DOMAIN"] = None
 
+
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(
     minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))
 )
@@ -81,6 +86,7 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(
 # Harden the browser session used by the server-rendered pages.
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 
 app.config["MAX_CONTENT_LENGTH"] = (
     int(os.getenv("MAX_UPLOAD_MB", "5")) * 1024 * 1024
@@ -142,6 +148,7 @@ def invalid_token_callback(error):
     }), 401
 
 
+# Register application blueprints.
 app.register_blueprint(employee_controller)
 app.register_blueprint(attendance_controller)
 app.register_blueprint(leave_controller)
@@ -168,6 +175,7 @@ def insert_initial_data():
 
         db.session.add_all(departments)
 
+
     if Designation.query.count() == 0:
 
         designations = [
@@ -179,6 +187,7 @@ def insert_initial_data():
 
         db.session.add_all(designations)
 
+
     if LeaveType.query.count() == 0:
 
         leave_types = [
@@ -188,6 +197,7 @@ def insert_initial_data():
         ]
 
         db.session.add_all(leave_types)
+
 
     # Starter holiday calendar data.
     # HR can add/remove holidays from the UI.
@@ -199,31 +209,37 @@ def insert_initial_data():
                 holiday_date=date(2026, 1, 26),
                 description="National holiday"
             ),
+
             Holiday(
                 name="Holi",
                 holiday_date=date(2026, 3, 4),
                 description="Festival holiday"
             ),
+
             Holiday(
                 name="Good Friday",
                 holiday_date=date(2026, 4, 3),
                 description="Public holiday"
             ),
+
             Holiday(
                 name="Independence Day",
                 holiday_date=date(2026, 8, 15),
                 description="National holiday"
             ),
+
             Holiday(
                 name="Gandhi Jayanti",
                 holiday_date=date(2026, 10, 2),
                 description="National holiday"
             ),
+
             Holiday(
                 name="Diwali",
                 holiday_date=date(2026, 11, 8),
                 description="Festival holiday"
             ),
+
             Holiday(
                 name="Christmas Day",
                 holiday_date=date(2026, 12, 25),
@@ -232,6 +248,7 @@ def insert_initial_data():
         ]
 
         db.session.add_all(holidays)
+
 
     db.session.commit()
 
@@ -244,8 +261,11 @@ if __name__ == "__main__":
 
         insert_initial_data()
 
+
+    # Use a safe local default.
+    # Docker/Kubernetes can override FLASK_HOST with 0.0.0.0.
     app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
+        host=os.getenv("FLASK_HOST", "127.0.0.1"),
+        port=int(os.getenv("FLASK_PORT", "5000")),
+        debug=False
     )
