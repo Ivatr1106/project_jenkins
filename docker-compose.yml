@@ -1,0 +1,69 @@
+services:
+
+  flask:
+    build: .
+    container_name: flask_app
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      MYSQL_DB_URL: "mysql+pymysql://root:root@mysql:3306/hr_management"
+
+      FLASK_SECRET_KEY: "docker-compose-secret-key"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    networks:
+      - app-network
+
+
+  mysql:
+    image: mysql:9.7.2
+    container_name: mysql_app
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: hr_management
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - app-network
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+    depends_on:
+      - flask
+
+    networks:
+      - app-network
+
+
+volumes:
+  mysql-data:
+
+
+networks:
+  app-network:
