@@ -20,19 +20,23 @@ compactor:
     block_retention: 1h
     compacted_block_retention: 10m
 
-# ---------- Metrics Generator (required for Drilldown) ----------
+# ---------- Metrics Generator ----------
 metrics_generator:
   registry:
     external_labels:
       source: tempo
       cluster: docker
+
   storage:
     path: /tmp/tempo/generator/wal
+
     remote_write:
       - url: http://prometheus:9090/api/v1/write
         send_exemplars: true
+
   traces_storage:
     path: /tmp/tempo/generator/traces
+
   processor:
     service_graphs: {}
     span_metrics: {}
@@ -40,15 +44,19 @@ metrics_generator:
 storage:
   trace:
     backend: local
+
     local:
       path: /tmp/tempo/blocks
+
     wal:
       path: /tmp/tempo/wal
 
 overrides:
   defaults:
     metrics_generator:
-      processors: [service-graphs, span-metrics]
+      processors:
+        - service-graphs
+        - span-metrics
 
 # Helps with single-binary ring issues
 memberlist:
