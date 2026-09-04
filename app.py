@@ -27,12 +27,36 @@ from controller.holiday_controller import holiday_controller
 
 from flask_jwt_extended import JWTManager
 
+# Prometheus monitoring
+from prometheus_flask_exporter import PrometheusMetrics
+
 
 # Load local development secrets from .env before reading configuration.
 load_dotenv()
 
 
 app = Flask(__name__)
+
+
+# ---------------------------------------------------------
+# Prometheus Metrics
+# ---------------------------------------------------------
+#
+# This automatically creates the /metrics endpoint.
+# Prometheus will scrape:
+#
+# http://flask:5000/metrics
+#
+# when running through Docker Compose.
+# ---------------------------------------------------------
+
+metrics = PrometheusMetrics(app)
+
+metrics.info(
+    'flask_app_info',
+    'Flask Application Information',
+    version='1.0.0'
+)
 
 
 @app.route("/health")
@@ -262,10 +286,12 @@ if __name__ == "__main__":
         insert_initial_data()
 
 
-    # Use a safe local default.
-    # Docker/Kubernetes can override FLASK_HOST with 0.0.0.0.
+    # Listen on all interfaces so Docker containers such as
+    # Prometheus can reach the Flask application.
+    #
+    # FLASK_HOST can still override this value if needed.
     app.run(
-        host=os.getenv("FLASK_HOST", "127.0.0.1"),
+        host=os.getenv("FLASK_HOST", "0.0.0.0"),
         port=int(os.getenv("FLASK_PORT", "5000")),
         debug=False
     )
