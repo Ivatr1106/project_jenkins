@@ -136,10 +136,10 @@ services:
     user: "0"
 
     command:
-      - -config.file=/etc/tempo.yaml
+      - -config.file=/etc/tempo.yml
 
     volumes:
-      - ./tempo.yaml:/etc/tempo.yaml:ro
+      - ./tempo.yml:/etc/tempo.yml:ro
       - tempo-data:/tmp/tempo
 
     ports:
